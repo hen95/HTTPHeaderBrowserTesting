@@ -1,0 +1,5 @@
+*.pem
+*.swp
+*.sql
+.htpasswd
+db_data/

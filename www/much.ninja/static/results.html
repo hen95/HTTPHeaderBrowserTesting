@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+	<head>
+	<title><?= htmlspecialchars($category) ?> Results</title>
+	<meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+	</head>
+	<body>
+	<!-- Show table of executed tests and the according browsers. -->
+	<div class="container">
+		<h3><?= htmlspecialchars($category) ?> Result Overview</h3>
+        <table class="table table-hover table-sm">
+            <caption><?= htmlspecialchars($category) ?></caption>
+            <thead class="thead-dark">
+                <tr>
+                    <th scope="col">Browser</th>
+                    <th scope="col">Engine</th>
+                    <th scope="col">OS</th>
+                </tr>
+            </thead>
+            <tbody>
+				<?php foreach($results as $key=>$val): ?>
+				<tr>
+					<td>
+						<a href="?show=<?= htmlspecialchars($category) ?>&browser=<?= htmlspecialchars($val['browser']) ?>&engine=<?= htmlspecialchars($val['engine']) ?>&os=<?= htmlspecialchars($val['os']) ?>"><?= htmlspecialchars($val['browser']) ?></a>
+					</td>
+					<td>
+						<a href="?show=<?= htmlspecialchars($category) ?>&browser=<?= htmlspecialchars($val['browser']) ?>&engine=<?= htmlspecialchars($val['engine']) ?>&os=<?= htmlspecialchars($val['os']) ?>"><?= htmlspecialchars($val['engine']) ?></a>
+					</td>
+					<td>
+						<a href="?show=<?= htmlspecialchars($category) ?>&browser=<?= htmlspecialchars($val['browser']) ?>&engine=<?= htmlspecialchars($val['engine']) ?>&os=<?= htmlspecialchars($val['os']) ?>"><?= htmlspecialchars($val['os']) ?></a>
+						<button type="button" class="close" onclick="delete_row(event)" data-id="<?= htmlspecialchars($val['id']) ?>" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+					</td>
+				</tr>
+				<?php endforeach; ?>
+			</tbody>
+        </table>
+
+	<a class="btn btn-primary" href="https://much.ninja/" role="button">Back</a>
+	</div>
+
+	<!-- Bootstrap -->
+	<script>
+		var delete_row = function(event){
+			console.log(event.target.parentNode.getAttribute('data-id'));
+			var id = event.target.parentNode.getAttribute('data-id');
+			var request = new XMLHttpRequest();
+			var parameters = {}
+			parameters['delete'] = true;
+			parameters['id'] = id;
+			request.open('POST', document.location.pathname);
+			request.send(JSON.stringify(parameters));
+			event.target.parentNode.parentNode.parentNode.parentNode.removeChild(event.target.parentNode.parentNode.parentNode);
+		}
+	</script>
+	<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+
+	</body>
+
+</html>

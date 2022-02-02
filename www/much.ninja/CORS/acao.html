@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+	<head>
+	<title>ACAO Testsuite</title>
+	<meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+	</head>
+	<body>
+	<script src="https://much.ninja/static/parseHeaders.js"></script>
+	<div class="container">
+		<h3>CORS Access-Control-Allow-Origin</h3>
+		<small class="text-muted">Duplicated headers and directives</small>
+		<table class="table table-hover table-sm">
+			<caption>Duplicated ACAO headers and directives</caption>
+			<thead class="thead-dark">
+				<tr>
+					<th scope="col">ACAO 1</th>
+					<th scope="col">ACAO 2</th>
+					<th scope="col">Access</th>
+				</tr>
+			</thead>
+			<tbody id="results"></tbody>
+		</table>
+	<a class="btn btn-primary" href="https://much.ninja/" role="button">Back</a>
+	<a class="btn btn-primary" href="#" onclick="save_result('ACAO', document.getElementsByTagName('table')[0], 'https://much.ninja/CORS/CORS.php'); confirm('Request sent.');return false;">Save test</a>
+	<a class="btn btn-primary" href="https://much.ninja/CORS/CORS.php?show=ACAO" role="button">Show saved tests</a>
+	</div>
+
+	<div id="TestingArea"></div>
+	<script>
+		var https_url = "https://sub." + document.location.hostname + '/CORS/CORS.php?pair=';
+		var testcases = [];
+
+		var printResult = function(testcase, result){
+			var raw_headers = atob(decodeURIComponent(testcase));
+			var headers = raw_headers.split("\\r\\n");
+			var tbl = document.getElementById('results');
+			var row = tbl.insertRow();
+			var first_directive = get_directive(headers[0]);
+			var second_directive = headers[1] !== undefined ? get_directive(headers[1]) : '';
+			row.insertCell().innerText = headers[0];
+			row.insertCell().innerText = headers[1] !== undefined ? headers[1] : '';
+
+			if(result)
+				row.insertCell().innerText = "Allowed";
+			else row.insertCell().innerText = "Denied";
+		
+
+			if(acao_rules(headers)){
+				if(result)
+					row.className = "alert alert-success";
+				else row.className = "alert alert-warning";
+			}else{
+				if(result)
+					row.className = "alert alert-danger";
+				else row.className = "alert alert-success";
+			}
+			return atob(decodeURIComponent(testcase)).replace('\\r\\n', ' ');
+		}
+
+		var check_acao = function(testcase, index){
+			if(index > testcases.length-1)
+				return;
+			var request = new XMLHttpRequest();
+			request.open('GET', https_url + testcase[1]);
+			request.onload = function(){
+				try{
+					if(request.responseText)
+						;
+					console.log(printResult(testcase[1], true));
+				}catch(e){
+					console.log(printResult(testcase[1], false));
+					console.warn("ERROR (onload): " + e + " " + testcase[0]);
+				}	
+				check_acao(testcases[index+1], index+1);
+			}								
+			request.onerror = function(){
+				console.log(printResult(testcase[1], false));
+				console.warn("ERROR (onerror): " + testcase[0]);
+				check_acao(testcases[index+1], index+1);
+			}
+			request.send();
+		}
+
+		var request = new XMLHttpRequest();
+		request.open('GET', './TestCases/ACAO_testcases.json');
+		request.onload = function(){
+			if(request.status != 200){
+				console.warn("Error: " + request.status);
+				return; 
+			}
+			testcases = JSON.parse(request.responseText);
+			console.log("Test cases: " + testcases);
+			check_acao(testcases[0], 0);
+		}
+		request.send();
+	</script>
+	<script src="https://cdn.jsdelivr.net/npm/ua-parser-js@0/dist/ua-parser.min.js"></script>
+	<script src="https://much.ninja/static/save.js"></script>
+	<!-- Bootstrap  -->
+	<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+	</body>
+
+</html>

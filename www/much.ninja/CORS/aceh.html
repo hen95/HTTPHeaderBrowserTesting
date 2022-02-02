@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+	<head>
+	<title>ACEH Testsuite</title>
+	<meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+	</head>
+	<body>
+	<script src="https://much.ninja/static/parseHeaders.js"></script>
+	<div class="container">
+		<h3>CORS Access-Control-Expose-Headers</h3>
+		<small class="text-muted">Duplicated headers and directives</small>
+		<table class="table table-hover table-sm">
+			<caption>Duplicated ACEH headers and directives</caption>
+			<thead class="thead-dark">
+				<tr>
+					<th scope="col">ACEH 1</th>
+					<th scope="col">ACEH 2</th>
+					<th scope="col">Exposed Headers</th>
+				</tr>
+			</thead>
+			<tbody id="results"></tbody>
+		</table>
+	<a class="btn btn-primary" href="https://much.ninja/" role="button">Back</a>
+	<a class="btn btn-primary" href="#" onclick="save_result('ACEH', document.getElementsByTagName('table')[0], 'https://much.ninja/CORS/CORS-ACEH.php'); confirm('Request sent.');return false;">Save test</a>
+	<a class="btn btn-primary" href="https://much.ninja/CORS/CORS-ACEH.php?show=ACEH" role="button">Show saved tests</a>
+	</div>
+
+	<div id="TestingArea"></div>
+	<script>
+		var https_url = "https://sub.much.ninja/CORS/CORS-ACEH.php?pair=";
+		var testcases = [];
+
+		var printResult = function(testcases, result, credentials){
+			var raw_headers = atob(decodeURIComponent(testcases[1])).toLowerCase();
+			var headers = raw_headers.split("\\r\\n").filter(function(elem){
+				return /expose-headers/i.test(elem);
+			});
+			var tbl = document.getElementById('results');
+			var row = tbl.insertRow();
+			var first_directive = get_directive(headers[0]);
+			var second_directive = headers[1] !== undefined ? get_directive(headers[1]) : '';
+			row.insertCell().innerText = headers[0];
+			row.insertCell().innerText = headers[1] !== undefined ? headers[1] : '';
+
+			// just the header names
+			var exposed_headers = result.split("\r\n");
+			exposed_headers = exposed_headers.map(function(elem){
+				return elem.split(':')[0];
+			});
+			// remove empty elements
+			exposed_headers = exposed_headers.filter(function(elem){
+				return elem !== '';
+			});
+			var directives = get_directive_list(headers, "access-control-expose-headers");
+			var warning = false;
+ 			if(directives.indexOf("test") !== -1 && exposed_headers.indexOf("test") === -1)
+				warning = true;
+ 			if(directives.indexOf("test2") !== -1 && exposed_headers.indexOf("test2") === -1)
+				warning = true;
+ 			if(directives.indexOf("*") !== -1 && exposed_headers.indexOf("random") === -1)
+				warning = true;
+			console.log(directives, exposed_headers);	
+			console.log(warning);	
+			
+			row.insertCell().innerText = exposed_headers.join('\r\n');
+			var rules_expheaders = aceh_rules(headers, exposed_headers, credentials);
+			
+			// if an header is exposed but shouldnt be exposed
+			// then set error to true
+			var error = false;
+			for(var i=0;i<exposed_headers;i++)
+				if(rules_expheaders.indexOf(exposed_headers[i]) === -1)
+					error = true;
+
+			row.className = "alert alert-success";
+			if(warning)
+				row.className = "alert alert-warning";
+			if(error)
+				row.className = "alert alert-danger";
+			return atob(decodeURIComponent(testcases[1])).replace('\\r\\n', ' ');
+		}
+
+		var check_aceh = function(testcase, index){
+			if(index > testcases.length-1)
+				return;
+			var request = new XMLHttpRequest();
+			var credentials = (testcase[0].indexOf("Access-Control-Allow-Credentials: true") !== -1) ? true : false;
+			request.open('GET', https_url + testcase[1]);
+			if(credentials)
+				request.withCredentials = true;
+			request.onload = function(){
+				try{
+					if(request.responseText)
+						console.log(printResult(testcase, request.getAllResponseHeaders(), request.withCredentials));
+				}catch(e){
+					console.log(printResult(testcase, request.getAllResponseHeaders(), request.withCredentials));
+					console.warn("ERROR (onload): " + e + " " + testcase[0]);
+				}	
+				check_aceh(testcases[index+1], index+1);
+			}								
+			request.onerror = function(){
+				console.log(printResult(testcase, request.getAllResponseHeaders() , request.withCredentials));
+				console.warn("ERROR (onerror): " + testcase[0]);
+				check_aceh(testcases[index+1], index+1);
+			}
+			request.send();
+		}
+
+		var request = new XMLHttpRequest();
+		request.open('GET', './TestCases/ACEH_testcases.json');
+		request.onload = function(){
+			if(request.status != 200){
+				console.warn("Error: " + request.status);
+				return; 
+			}
+			testcases = JSON.parse(request.responseText);
+			console.log("Test cases: " + testcases);
+			check_aceh(testcases[0], 0);
+		}
+		request.send();
+	</script>
+	<script src="https://cdn.jsdelivr.net/npm/ua-parser-js@0/dist/ua-parser.min.js"></script>
+	<script src="https://much.ninja/static/save.js"></script>
+	<!-- Bootstrap  -->
+	<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+	</body>
+
+</html>

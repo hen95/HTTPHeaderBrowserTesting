@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+	<head>
+	<title>CSP frame-ancestors vs X-Frame-Options Testsuite</title>
+	<meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+	</head>
+	<body>
+	<script src="https://much.ninja/static/parseHeaders.js"></script>
+	<div class="container">
+		<h3>Content-Security-Policy vs X-Frame-Options</h3>
+		<small class="text-muted">Duplicated headers and directives</small>
+		<table class="table table-hover table-sm">
+			<caption>CSP vs XFO</caption>
+			<thead class="thead-dark">
+				<tr>
+					<th scope="col">Header 1</th>
+					<th scope="col">Header 2</th>
+					<th scope="col">Framing Domain</th>
+					<th scope="col">Framing SubDomain</th>
+				</tr>
+			</thead>
+			<tbody id="results"></tbody>
+		</table>
+	<a class="btn btn-primary" href="/" role="button">Back</a>
+	<a class="btn btn-primary" href="#" onclick="save_result('CSP vs XFO', document.getElementsByTagName('table')[0], 'https://much.ninja/CSP/XFOCSP.php'); confirm('Request sent.');return false;">Save test</a>
+	<a class="btn btn-primary" href="https://much.ninja/CSP/XFOCSP.php?show=CSP vs XFO" role="button">Show saved tests</a>
+	</div>
+
+	<div id="TestingArea"></div>
+	<script>
+		var createEntry = function(testcase){
+			var raw_headers = atob(decodeURIComponent(testcase));
+			var headers = raw_headers.split("\\r\\n");
+			var tbl = document.getElementById('results');
+			var row = tbl.insertRow();
+			row.id = raw_headers.replace("\\r\\n", "");
+			if(headers[0].indexOf('X-Frame-Options') !== -1)
+				row.insertCell().innerText = headers[0].replace("X-Frame-Options",'XFO');
+			else if(headers[0].indexOf('Content-Security-Policy') !== -1)
+				row.insertCell().innerText = headers[0].replace("Content-Security-Policy:",'CSP:');
+			else if(headers[0].indexOf('X-WebKit-CSP') !== -1)
+				row.insertCell().innerText = headers[0];
+
+			if(headers[1].indexOf('X-Frame-Options') !== -1)
+				row.insertCell().innerText = headers[1].replace("X-Frame-Options",'XFO');
+			else if(headers[1].indexOf('Content-Security-Policy') !== -1)
+				row.insertCell().innerText = headers[1].replace("Content-Security-Policy:",'CSP:');
+			else if(headers[1].indexOf('X-WebKit-CSP') !== -1)
+				row.insertCell().innerText = headers[1];
+
+			row.insertCell().innerText = "Denied";
+			row.insertCell().innerText = "Denied";
+			row.className = "alert alert-success";
+		}
+		var printResult = function(testcase){
+			var framing_origin = testcase.split("/")[2];
+			var same_origin = framing_origin === window.location.host ? true : false;
+			var raw_headers = atob(decodeURIComponent(testcase.split("=")[2]));
+			var row = document.getElementById(raw_headers.replace("\\r\\n",""));
+			var containerid = document.getElementById(raw_headers.replace("\\r\\n",""));
+			if(same_origin)
+				row.cells[2].innerText = "Allowed";
+			if(!same_origin)
+				row.cells[3].innerText = "Allowed";
+
+			if(raw_headers.indexOf("Content-Security-Policy") !== -1 && raw_headers.indexOf("X-Content-Security-Policy") === -1){
+				var CSP_list = raw_headers.split('\\r\\n');
+				var result = check_frame_ancestors(CSP_list, document.location.href, testcase, 0);
+				if(!result)
+					row.className = "alert alert-danger";
+			}else if(raw_headers.indexOf("X-Frame-Options") !== -1){
+				var framing_allowed = xfo_rules(headers, same_origin);
+				if(!framing_allowed)
+					row.className = "alert alert-danger";
+			}
+			
+			return raw_headers.replace('\\r\\n', ' ');
+		}
+		
+		window.addEventListener("message", function(event){
+			if(event.origin.indexOf("much.ninja") !== -1){
+				printResult(event.data);
+			}
+		});
+
+		var testingarea = document.getElementById('TestingArea');
+		var url = document.location.origin + '/CSP/XFOCSP.php?suite=xfocsp&pair=';
+		var suburl = url.replace("much.ninja", "sub.much.ninja");
+		var CSP_cases = function(data){
+			for(var i=0; i<data.length;i++){
+				var container = document.createElement('div');
+				container.id = "ifr1" + atob(decodeURIComponent(data[i][1])).replace("\\r\\n",'');
+				var container2 = document.createElement('div');
+				container2.id = "ifr2" + atob(decodeURIComponent(data[i][1])).replace("\\r\\n",'');
+				testingarea.appendChild(container);
+				testingarea.appendChild(container2);
+
+
+				var ifr = document.createElement('iframe');
+				var ifr2 = document.createElement('iframe');
+				ifr.src = url + data[i][1];
+				ifr2.src = suburl + data[i][1];
+
+				ifr.style = ifr2.style = "visibility: hidden; display: none; border: 0px;";
+				ifr.setAttribute('height','0');
+				ifr2.setAttribute('height','0');
+				ifr.setAttribute('width','0');
+				ifr2.setAttribute('width','0');
+				ifr.setAttribute('frameborder','0');
+				ifr2.setAttribute('frameborder','0');
+				ifr.setAttribute('marginheight','0');
+				ifr2.setAttribute('marginheight','0');
+				ifr.setAttribute('marginwidth','0');
+				ifr2.setAttribute('marginwidth','0');
+				createEntry(data[i][1]);
+
+				container.appendChild(ifr);
+				container2.appendChild(ifr2);
+			}
+		}
+		var request = new XMLHttpRequest();
+		request.open("GET","../XFO_CSP_testcases.json");
+		request.addEventListener('load', function(event) {
+		   if (request.status >= 200 && request.status < 300) {
+			  console.log(request.responseText);
+		      CSP_cases(JSON.parse(request.responseText));
+		   } else {
+		      console.warn(request.statusText, request.responseText);
+		   }
+		});
+		request.send();
+	</script>
+	<script src="https://cdn.jsdelivr.net/npm/ua-parser-js@0/dist/ua-parser.min.js"></script>
+	<script src="https://much.ninja/static/save.js"></script>
+<!-- Bootstrap  -->
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+	</body>
+
+</html>

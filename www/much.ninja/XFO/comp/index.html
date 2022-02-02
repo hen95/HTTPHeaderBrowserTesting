@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+	<head>
+	<title>XFO Testsuite</title>
+	<meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+	</head>
+	<body>
+	<script src="https://much.ninja/static/parseHeaders.js"></script>
+	<script src="https://much.ninja/static/tableTesting.js"></script>
+	<div class="container">
+		<h3>X-Frame-Options</h3>
+		<div id="table"></div>
+	<a class="btn btn-primary" href="/" role="button">Back</a>
+	<a class="btn btn-primary" href="#" onclick="save_result('XFO', document.getElementsByTagName('table')[0], 'https://much.ninja/XFO/XFO.php'); confirm('Request sent.');return false;">Save test</a>
+	<a class="btn btn-primary" href="https://much.ninja/XFO/XFO.php?show=XFO" role="button">Show saved tests</a>
+	</div>
+
+	<div id="TestingArea"></div>
+	<script>
+		var testStatus = {}
+		var addTestStatus = function(testcase){ testStatus[testcase] = ['Waiting..', 'Waiting..']; }
+		var updateTestStatus = function(testcase, stat, index){ testStatus[testcase][index] = stat; }
+		var createEntry = function(testcase){
+			var headers = atob(decodeURIComponent(testcase)).split('\\r\\n');
+			var content = [];
+			content.push(headers[0].replace("X-Frame-Options:",''));
+			content.push(headers[1] === undefined ? ' ' : headers[1].replace("X-Frame-Options:",''));
+			content.push("Testing..");
+			content.push("Testing..");
+			updateTableEntry(testcase, content, '', 'create');
+		}
+		var validateBehavior = function(){
+			var tbl = document.getElementById("results");
+			for(var i=0;i<tbl.children.length;i++){
+				var entryId = tbl.children[i].id;
+				var headers = atob(decodeURIComponent(entryId)).split('\\r\\n');
+				var specSO = xfo_rules(headers, true);
+				var specCO = xfo_rules(headers, false);
+				var statusSO = testStatus[entryId][0] === "Allowed" ? 1 : 0;
+				var statusCO = testStatus[entryId][1] === "Allowed" ? 1 : 0;
+				if(!statusSO)
+					updateTableEntry(entryId, ['','','Denied',''], '', '');
+				if(!statusCO)
+					updateTableEntry(entryId, ['','','','Denied'], '', '');
+				var SO = specSO == statusSO ? 1 : 0;
+				var CO = specCO == statusCO ? 1 : 0;
+				const stat = ( SO && CO ) ? 'success' : ( specSO + specCO > statusSO + statusCO ) ? 'warning' : ( specSO + specCO < statusSO + statusCO ) ? 'danger' : null;
+				updateTableEntry(entryId, '', '', stat);
+			}
+			
+		}
+		window.addEventListener("message", function(event){
+			var regex = /^https?:\/\/(?:sub\.)?much\.ninja$/;
+			if(event.origin.match(regex)){
+				var index = event.origin === window.location.origin ? 0 : 1;
+				var entryId = event.data.split('=')[1];
+				updateTestStatus(entryId, 'Allowed', index);
+				updateTableEntry(entryId, ['', '', testStatus[entryId][0], testStatus[entryId][1]]);
+			}
+		});
+		var setHeaders = function(testcase){
+			var testingarea = document.getElementById('TestingArea');
+			var url = document.location.origin + '/XFO/XFO.php?&pair=';
+			var suburl = url.replace(document.location.host, "sub."+document.location.host);
+			var urls =  [url, suburl];
+			for(var i=0;i<urls.length;i++){
+				var ifr = document.createElement('iframe');
+				ifr.src = urls[i] + testcase;
+				ifr.style = "visibility: hidden; display: none; border: 0px;";
+				ifr.setAttribute('height','0');
+				ifr.setAttribute('width','0');
+				ifr.setAttribute('frameborder','0');
+				ifr.setAttribute('marginheight','0');
+				ifr.setAttribute('marginwidth','0');
+				testingarea.appendChild(ifr);
+			}
+
+		}
+		var XFOStartTest = function(data){
+			for(var i=0;i<data.length;i++){
+				addTestStatus(data[i][1]);
+				createEntry(data[i][1]);
+				setHeaders(data[i][1]);
+			}
+		}
+		createTable(["XFO 1", "XFO 2", "Framing Domain", "Framing SubDomain"]);
+		var interval = setInterval(validateBehavior, 1000);
+		setTimeout(function(){ clearInterval(interval)}, 20000);
+		var request = new XMLHttpRequest();
+		request.open("GET","../XFO_testcases.json");
+		request.addEventListener('load', function(event) {
+		   if (request.status >= 200 && request.status < 300) {
+		      XFOStartTest(JSON.parse(request.responseText));
+		   } else {
+		      console.warn(request.statusText, request.responseText);
+		   }
+		});
+		request.send();
+	</script>
+	<script src="https://cdn.jsdelivr.net/npm/ua-parser-js@0/dist/ua-parser.min.js"></script>
+	<script src="https://much.ninja/static/save.js"></script>
+<!-- Bootstrap -->
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+	</body>
+
+</html>

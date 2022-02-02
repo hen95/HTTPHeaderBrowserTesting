@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+	<head>
+	<title>XFO Testsuite</title>
+	<meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+	</head>
+	<body>
+	<script src="https://much.ninja/static/parseHeaders.js"></script>
+	<script src="https://much.ninja/static/tableTesting.js"></script>
+	<div class="container">
+		<h3>X-Frame-Options</h3>
+		<div id="table"></div>
+	<a class="btn btn-primary" href="/" role="button">Back</a>
+	<a class="btn btn-primary" href="#" onclick="save_result('XFO', document.getElementsByTagName('table')[0], 'https://much.ninja/XFO/XFO.php'); confirm('Request sent.');return false;">Save test</a>
+	<a class="btn btn-primary" href="https://much.ninja/XFO/XFO.php?show=XFO" role="button">Show saved tests</a>
+	</div>
+
+	<div id="TestingArea"></div>
+	<script>
+		// We keep the current status of test results in this object
+		let testStatus = {}
+		// Adding test case to object. First is domain, second is subdomain (SameOrigin, CrossOrigin).
+		const addTestStatus = (testcase) => testStatus[testcase] = ['Waiting..', 'Waiting..'];
+		// Updating status of test case
+		const updateTestStatus = (testcase, stat, index) => testStatus[testcase][index] = stat;
+
+		const createEntry = (testcase) => {
+			// Preparing content for table entry.
+			const headers = atob(decodeURIComponent(testcase)).split('\\r\\n');
+			let content = [];
+			content.push(headers[0].replace("X-Frame-Options:",''));
+			content.push(headers[1] === undefined ? ' ' : headers[1].replace("X-Frame-Options:",''));
+			content.push("Testing..");
+			content.push("Testing..");
+			updateTableEntry(testcase, content, '', 'create');
+		}
+		const validateBehavior = () => {
+			const tbl = document.getElementById("results");
+			for(var i=0;i<tbl.children.length;i++){
+				const entryId = tbl.children[i].id;
+				const headers = atob(decodeURIComponent(entryId)).split('\\r\\n');
+				// What would the spec do?
+				const specSO = xfo_rules(headers, true);
+				const specCO = xfo_rules(headers, false);
+				// Message status in variable testStatus.
+				const statusSO = testStatus[entryId][0] === "Allowed" ? 1 : 0;
+				const statusCO = testStatus[entryId][1] === "Allowed" ? 1 : 0;
+				// Update result table if we didn't get a message yet.
+				if(!statusSO)
+					updateTableEntry(entryId, ['','','Denied',''], '', '');
+				if(!statusCO)
+					updateTableEntry(entryId, ['','','','Denied'], '', '');
+				// If spec and status is the same, then the browser behaves in the right way.
+				const SO = specSO == statusSO ? 1 : 0;
+				const CO = specCO == statusCO ? 1 : 0;
+				// 1|0 or 0|1. First is warning, second is danger
+				// Same for cross origin (subdomain)
+				/*
+					spec = true if framing allowed, false if denied
+					status = true if framing allowed, false if denied
+					
+					success if spec = status; SO && CO
+					warning if spec !== status && !status; if browser behaves differently than spec and browser denies framing => is stricter
+					danger if spec !== status && status; if browser behaves differently than spec and browser allows framing => is more open
+				*/
+				const stat = ( SO && CO ) ? 'success' : ( specSO + specCO > statusSO + statusCO ) ? 'warning' : ( specSO + specCO < statusSO + statusCO ) ? 'danger' : null;
+				updateTableEntry(entryId, '', '', stat);
+
+			}
+			
+		}
+
+		// We receive messages from the iframes if the browser allowed framing.
+		window.addEventListener("message", (event) => {
+			let regex = /^https?:\/\/(?:sub\.)?much\.ninja$/;
+			if(event.origin.match(regex)){
+				// testStatus[id][0] for domain, testStatus[id][1] for subdomain
+				const index = event.origin === window.location.origin ? 0 : 1;
+				const entryId = event.data.split('=')[1];
+				// Update results in variable.
+				updateTestStatus(entryId, 'Allowed', index);
+				// Update result table.
+				updateTableEntry(entryId, ['', '', testStatus[entryId][0], testStatus[entryId][1]]);
+			}
+		});
+
+		// We are embedding the domain and the subdomain (different origin) via iframe.
+		// The src-attribute contains the base64 encoded test case in the parameter "pair".
+		const setHeaders = (testcase) => {
+			const testingarea = document.getElementById('TestingArea');
+			const url = document.location.origin + '/XFO/XFO.php?&pair=';
+			const suburl = url.replace(document.location.host, "sub."+document.location.host);
+			for(let i of [url, suburl]){
+				const ifr = document.createElement('iframe');
+				ifr.src = i + testcase;
+				ifr.style = "display: none";
+				testingarea.append(ifr);
+			}
+
+		}
+		// Starts executing test cases.
+		// Test case format:
+		// [ [ [ XFO1: dir1, XFO2: dir2 ], b64encoded(XFO1: dir1\r\nXFO2: dir2) ], .. ]
+		const XFOStartTest = (data) => {
+			for(const [index, test] of data.entries()){
+				addTestStatus(test[1]);
+				createEntry(test[1]);
+				setHeaders(test[1]);
+				// Checking header enforcement is done in the event listener.
+				// Validating browsers' behavior is done every X seconds.
+			}
+		}
+		// Create table skeleton.
+		createTable(["XFO 1", "XFO 2", "Framing Domain", "Framing SubDomain"]);
+		// Repeatingly call validateBehavior to check the browser behavior against the spec.
+		// Repeatingly because some browsers may be slower. And didn't receive anything.
+		// Maybe if we add more messages, then we need more time.
+		// We can't check immediatly after receiving messages because in some cases we don't receive any
+		// messages. In this cases, the browser behaved stricter than the spec.
+		const interval = setInterval(validateBehavior, 1000);
+		setTimeout(() => clearInterval(interval), 20000);
+		fetch("../XFO_testcases.json")
+			.then(response => response.json())
+			.then(data => XFOStartTest(data))
+	</script>
+	<script src="https://cdn.jsdelivr.net/npm/ua-parser-js@0/dist/ua-parser.min.js"></script>
+	<script src="https://much.ninja/static/save.js"></script>
+<!-- Bootstrap -->
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+	</body>
+
+</html>

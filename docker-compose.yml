@@ -1,0 +1,53 @@
+version: '3.7'
+
+services:
+  db:
+    image: mysql:latest
+    volumes:
+      - "./db_data:/var/lib/mysql"
+    restart: always
+    environment:
+      MYSQL_DATABASE: results
+      MYSQL_USER: member
+      MYSQL_PASSWORD: EVERYONE_C4N_R34D_TH15!
+      MYSQL_RANDOM_ROOT_PASSWORD: yep
+    networks:
+      default:
+        aliases:
+          - db
+    ports:
+        - "3306:3306"
+
+  nginx:
+    image: nginx:1.19-alpine
+    restart: always
+    networks:
+      default:
+         aliases:
+           - proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "./nginx-proxy/default.conf:/etc/nginx/conf.d/default.conf:ro"
+      - "./nginx-proxy/php.conf:/etc/nginx/conf.d/conf/php.conf:ro"
+      - "./nginx-proxy/.htpasswd:/etc/nginx/conf.d/.htpasswd:ro"
+      - "./www:/var/www:ro"
+      - "./nginx-proxy/certs/:/etc/letsencrypt/live/much.ninja:ro"
+
+  app1-php:
+    build: ./php
+    restart: always
+    working_dir: /var/www
+    environment:
+      APACHE_DOCUMENT_ROOT: /var/www
+    networks:
+      default:
+        aliases:
+          - app1-php
+    volumes:
+      - "./www:/var/www:ro"
+  
+
+networks:
+  default:

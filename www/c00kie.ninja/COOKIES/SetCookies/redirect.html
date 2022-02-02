@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html>
+	<head></head>
+	<body>
+		<p> Redirecting to <?= htmlspecialchars($this->$redirect) ?> in 1 seconds </p>
+		<script>
+			var redirect = "<?= htmlspecialchars($this->$redirect) ?>" || null;
+			if(/^https?:\/\/(?:sub\.)?much\.ninja[\w\/\.-]*$/.test(redirect)) setTimeout(function(){window.location=redirect}, 1000);
+		</script>
+	</body>
+</html>

@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+	<head>
+	</head>
+	<body>
+		<h3> SameSite Cookie Level </h3>
+		<?php if(isset($_COOKIE['default'])): ?>
+		<p> Cookie: default </p>
+		<?php endif; ?>
+		<?php if(isset($_COOKIE['none'])): ?>
+		<p> Cookie: none; secure </p>
+		<?php endif; ?>
+		<?php if(isset($_COOKIE['lax'])): ?>
+		<p> Cookie: lax </p>
+		<?php endif; ?>
+		<?php if(isset($_COOKIE['strict'])): ?>
+		<p> Cookie: strict </p>
+		<?php endif; ?>
+	</body>
+</html>

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+	<head>
+	<title>HSTS Testsuite</title>
+	<meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+	</head>
+	<body>
+	<script src="https://much.ninja/static/parseHeaders.js"></script>
+	<script src="https://much.ninja/static/tableTesting.js"></script>
+	<script src="https://much.ninja/static/save.js"></script>
+	<div class="container">
+		<h3>Strict-Transport-Security</h3>
+		<div id="table"></div>
+	<a class="btn btn-primary" href="/" role="button">Back</a>
+	<a class="btn btn-primary" href="#" onclick="save_result('HSTS', document.getElementsByTagName('table')[0], 'http://much.ninja/HSTS/HSTS.php'); confirm('Request sent.');return false;">Save test</a>
+	<a class="btn btn-primary" href="http://much.ninja/HSTS/HSTS.php?show=HSTS" role="button">Show saved tests</a>
+	</div>
+
+	<div id="TestingArea"></div>
+	<script>
+		var testcases = [];
+		var https_url = "https://" + document.location.hostname + '/HSTS/HSTS.php?pair=';
+		var https_suburl = https_url.replace(document.location.hostname, "sub."+document.location.hostname);
+		var testStatus = {}
+		var addTestStatus = function(testcase){ testStatus[testcase]=['Waiting..','Waiting..']; }
+		var updateTestStatus = function(testcase, stat, index){ testStatus[testcase][index] = stat; }
+		// We create the table skeleton here.
+		var createEntry = function(testcase){
+			var headers = atob(decodeURIComponent(testcase)).split("\\r\\n");
+			var content = [];
+			content.push(headers[0].replace("Strict-Transport-Security:",''));
+			content.push(headers[1] === undefined ? ' ' : headers[1].replace("Strict-Transport-Security:",''));
+			content.push('Testing..');
+			content.push('Testing..');
+			updateTableEntry(testcase, content, '', 'create');
+		}
+		// Here we check if the browser behaved correctly according to the spec.
+		var validateBehavior = function(){
+			var tbl = document.getElementById("results");
+			for(var i=0;i<tbl.children.length;i++){
+				var entryId = tbl.children[i].id;
+				var headers = atob(decodeURIComponent(entryId)).split('\\r\\n');
+				var d = testStatus[entryId][0] === "HTTPS" ? true : false;
+				var sd = testStatus[entryId][1] === "HTTPS" ? true : false;
+				var spec = hsts_rules(headers);
+				var specD = spec[0];
+				var specSD = spec[1];
+				var statusD = specD == d ? 1 : 0;
+				var statusSD = specSD == sd ? 1 : 0;
+				var stat = ( statusD && statusSD ) ? 'success' : (d + sd > specD + specSD) ? 'warning' : (specD + specSD > d + sd) ? 'danger' : null;
+				updateTableEntry(entryId, '', '', stat);
+			}
+		}
+		// Here we receive the postMessage event and we update the status table.
+		window.addEventListener("message", function(event){
+			var regex = /^https?:\/\/(?:sub\.)?much\.ninja$/;
+			if(event.origin.match(regex)){
+				var index = event.origin.split('://')[1] === window.location.host ? 0 : 1;
+				var entryId = event.data.split('=')[1];
+				var protocol = event.data.split('://')[0] === 'https' ? 'HTTPS' : 'HTTP';
+				updateTestStatus(entryId, protocol, index);
+				updateTableEntry(entryId, ['', '', testStatus[entryId][0], testStatus[entryId][1]]);
+			}
+		});
+		// Between each test case we reset HSTS.
+		// The server responds with this parameters with max-age=0.
+		var resetHSTS = function(url, index, testmode){
+			var reset_payload = "U3RyaWN0LVRyYW5zcG9ydC1TZWN1cml0eTogbWF4LWFnZT0w&setHSTS";
+			var request = new XMLHttpRequest();
+			request.open("GET", https_url + reset_payload);
+			request.addEventListener('load', function(event){
+				if(testmode){
+					addTestStatus(testcases[index][1]);
+					createEntry(testcases[index][1]);
+					setHSTS(url, index);
+				}else{
+		    		window.location.href = "http://much.ninja";
+				}
+			});
+			request.send();
+		}
+		// Here we send a HTTPS request to receive the test case in the response.
+		var setHSTS = function(url, index){
+			var request = new XMLHttpRequest();
+			request.open("GET", url + testcases[index][1] + "&setHSTS");
+			request.addEventListener('load', function(event){
+				setFrame(url, index);
+			});
+			request.send();
+		}
+		// This function embeds an iframe via HTTP.
+		// First for the domain then it calls itself to do the same with the subdomain.
+		// The iframe will send a message with its url via postMessage to this window.
+		// If we got redirected then we know that the previously sent HTTPS request in "setHSTS" got HSTS headers back that the browser enforced.
+		var setFrame = function(url, index){
+			http_url = url.replace("https://", "http://");
+			var domain = url.split('://')[1].split('/')[0];
+			var ifr = document.createElement('iframe');
+			ifr.src = http_url + testcases[index][1];
+			ifr.onload = function(){
+				// Now test subdomain :)
+				if(domain === "much.ninja")
+					setFrame(url.replace("much.ninja", "sub.much.ninja"), index);
+				// If called by subdomain, go next case :)
+				if(domain === "sub.much.ninja")
+					if(testcases.length > index+1){
+						resetHSTS(url.replace("sub.much.ninja", "much.ninja"), index+1, true);
+					}
+			}
+			ifr.style = "visibility: hidden; display: none; border: 0px;";
+			ifr.setAttribute('height','0');
+			ifr.setAttribute('width','0');
+			ifr.setAttribute('frameborder','0');
+			ifr.setAttribute('marginheight','0');
+			ifr.setAttribute('marginwidth','0');
+			document.getElementById('TestingArea').appendChild(ifr);
+		}
+		var HSTSStartTest = function(){
+			// Create result table first.
+			createTable(["HSTS 1", "HSTS 2", "Protocol Domain", "Protocol SubDomain"]);
+			// Enable interval where we compare the behavior to the spec.
+			var interval = setInterval(validateBehavior,500);
+			// Disable it after X seconds.
+			setTimeout(function(){ clearInterval(interval)}, 30000);
+			// Get testcases first then ABFAHRT
+			var request = new XMLHttpRequest();
+			request.open("GET","../HSTS_testcases.json");
+			request.addEventListener('load', function(event) {
+				if (request.status >= 200 && request.status < 300) {
+					testcases = JSON.parse(request.responseText);
+					resetHSTS(https_url, 0, true);
+			   }
+			});
+			request.send();
+		}
+		// We have to be on HTTP. Otherwise we get conflicts because of Mixed Content.
+		if(window.location.protocol.indexOf("https:") !== -1 && navigator.userAgent.indexOf("Trident") === -1){
+		    confirm("Redirect to HTTP to perform this redirect due to 'Mixed Content'.");
+			resetHSTS();
+		}else HSTSStartTest();
+		
+	</script>
+	<script src="https://cdn.jsdelivr.net/npm/ua-parser-js@0/dist/ua-parser.min.js"></script>
+	<!-- Bootstrap -->
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+	</body>
+
+</html>

@@ -1,0 +1,16 @@
+version: "3"
+
+services:
+  db:
+    image: mariadb
+    restart: always
+    ports:
+      - 3306:3306
+    volumes:
+      - ./db:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=lightinthehead
+  lith:
+    build: .
+    volumes:
+      - ./data:/root/data

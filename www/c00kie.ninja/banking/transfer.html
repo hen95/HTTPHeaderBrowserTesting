@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+	<head>
+	</head>
+	<body>
+		<h3> Welcome <?= $_SESSION['user'] ?> </h3>
+		<p> Credit: <?= $_SESSION['users'][$_SESSION['user']] ?>
+		<table>
+			<th>
+				<tr><td>Transactions</td><tr>
+			</th>
+			<?php foreach($_SESSION['transactions'] as $key=>$value): ?>
+			<tr>
+				<td><?= $value; ?></td>
+			</tr>
+			<?php endforeach; ?>
+		</table>
+		<script>
+			if(window.location.search.indexOf("redirect") !== -1)
+			setTimeout(function(){window.location="https://much.ninja/<?= $this->$redirect ?>"}, 1000);
+		</script>
+	</body>
+</html>

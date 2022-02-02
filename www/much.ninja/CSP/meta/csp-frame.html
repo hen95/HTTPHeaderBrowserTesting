@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+	<head>
+	<meta http-equiv="Content-Security-Policy" content="frame-ancestors 'none'">
+	</head>
+	<body>
+		<script>
+		// only execute if we re in an iframe :)
+		if(window !== parent)
+			window.parent.postMessage(document.location.href || window.location.href,'*');
+		</script>
+	<p> Hello </p>
+<iframe src="https://giphy.com/embed/fhLgA6nJec3Cw" width="480" height="343" frameBorder="0" class="giphy-embed" allowFullScreen></iframe>
+	</body>
+</html>
+

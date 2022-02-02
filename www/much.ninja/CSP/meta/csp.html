@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+	<!-- Bootstrap CSS -->
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+</head>
+<body>
+	<div class="container">
+		<h3>CSP frame-ancestors via meta</h3>
+		<table class="table table-hover table-sm">
+			<caption>CSP frame-ancestors via meta tag</caption>
+			<thead class="thead-dark">
+				<tr>
+					<th scope="col">CSP</th>
+					<th scope="col">Framing Domain</th>
+				</tr>
+			</thead>
+			<tbody id="results"></tbody>
+		</table>
+	<a class="btn btn-primary" href="/" role="button">Back</a>
+	<a class="btn btn-primary" href="#" onclick="save_result('CSP-meta', document.getElementsByTagName('table')[0], 'https://much.ninja/CSP/CSP.php'); confirm('Request sent.');return false;">Save test</a>
+	<a class="btn btn-primary" href="https://much.ninja/CSP/CSP.php?show=CSP-meta" role="button">Show saved tests</a>
+	</div>
+
+	<div id="TestingArea"></div>
+	<script src="https://cdn.jsdelivr.net/npm/ua-parser-js@0/dist/ua-parser.min.js"></script>
+	<script src="https://much.ninja/static/save.js"></script>
+	<script>
+		var testcase = ["Content-Security-Policy: frame-ancestors 'none'"];
+		var createEntry = function(testcase){
+			var headers = testcase;
+			var tbl = document.getElementById('results');
+			var row = tbl.insertRow();
+			row.id = headers;
+			row.insertCell().innerText = headers[0].replace("Content-Security-Policy:",'');
+			row.insertCell().innerText = "Denied";
+			row.className = "alert alert-danger";
+		}
+		var printResult = function(url ,testcase){
+			// Yandex Browser doing weeeird stuff
+			if(url.topic !== undefined && url.topic.indexOf("yandex") !== -1)
+				return console.log("Fuck off Yandex Browser");
+
+			if(url.indexOf("much.ninja") === -1)
+				return;
+			
+			var row = document.getElementById(testcase[0]);
+			row.className = "alert alert-success";
+			row.cells[1].innerText = "Allowed";
+
+			return testcase[0];
+		}
+		window.addEventListener("message",function(){
+			console.log(event.data);
+			if(typeof event.data === 'string')
+				if(event.origin === window.location.origin){
+					printResult(event.data, testcase)
+				}
+		});
+		createEntry(testcase);
+		var ifr = document.createElement('iframe');
+		ifr.width = "0";
+		ifr.height = "0";
+		ifr.scrolling = "no";
+		ifr.src = "./csp-frame.html";
+		document.body.appendChild(ifr);
+	</script>
+</body>
+</html>

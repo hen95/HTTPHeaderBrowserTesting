@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Comparison Table</title>
+		<meta charset="UTF-8" />
+    	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    	<!-- Bootstrap CSS -->
+    	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+<link href="https://cdn.jsdelivr.net/npm/gridjs/dist/theme/mermaid.min.css" rel="stylesheet" />
+		</head>
+	<body>
+		<!-- This is the big comparison table. -->
+		<script src="https://cdn.jsdelivr.net/npm/gridjs/dist/gridjs.production.min.js"></script>
+		<div class="container">
+			<h3 align="center">Comparison Table</h3>
+			<div id="wrapper" style="overflow-x:auto;max-width:100%"></div>
+			<!--<p> Note: This is still under development. </p>-->
+			<a class="btn btn-primary" href="https://much.ninja/" role="button">Back</a>
+		</div>
+			<script>
+
+				const get_result_number = (data) => {
+					let count_max = 0;
+					let count_pass = 0;	
+					let danger_lvl = "success";
+					for(const [key, entry] of Object.entries(data['rows'])){
+						count_max++;
+						entry.forEach(attr => {
+							if(typeof(attr) === 'object' && 'color' in attr)
+								if(attr['color'].includes('success'))
+									count_pass++;
+								else if(attr['color'].includes('warning') && !danger_lvl.includes('danger'))
+									danger_lvl = "warning";
+								else if(attr['color'].includes('danger'))
+									danger_lvl = "danger";
+							});
+					}
+					return `${count_pass}/${count_max}; ${danger_lvl}`;
+				}
+
+				const get_parent_category = (category) => {
+					if(category.includes("CSP"))
+						return "CSP";
+					if(category.includes("HSTS"))
+						return "HSTS";
+					if(category.includes("XFO"))
+						return "XFO";
+					return "CORS";
+					
+				}
+				const create_href = (category, browser, engine, os) => {
+					const parent_cat = get_parent_category(category);
+					return `//much.ninja/${parent_cat}/${parent_cat}.php?show=${category}&browser=${browser}&engine=${engine}&os=${os}`
+
+				}
+
+				const get_structure_grid_data = async () => {
+					// All columns in table
+					let columns = [];
+					// The Categories is our first column
+					
+					let response = await fetch('https://much.ninja/COMPARISON/result.php?show=os_browser');
+					const raw_os = await response.json();
+					const os = [];
+					let test_case = {};
+					let test_case_header_columns = {};
+					raw_os.forEach(element => {
+						// preps for data aggr later
+						let br = element['browser'].split(',');
+						// Filter for presentation
+						//br = br.filter(element => element.includes("Edge"));
+						//if(br.length === 0)
+						//	return;
+						let o = element['os'];
+						test_case[o] = br;
+						os.push(test_case);
+					});
+
+
+					
+
+					// Get all categories 
+					response = await fetch('https://much.ninja/COMPARISON/result.php?show=category');
+					const raw_categories = await response.json();
+					const categories = [];
+					raw_categories.forEach(element => {
+						categories.push(element['category']);
+					});
+
+					
+					// Get all results
+					response = await fetch('https://much.ninja/COMPARISON/result.php?show=all');
+					const all_data = await response.json();
+					console.log(all_data);
+
+					// Create table, thead, tbody
+					var tbl = document.createElement('table');					
+					tbl.setAttribute('class', 'table table-hover table-sm');
+					var tblhead = document.createElement('thead');					
+					tblhead.setAttribute('class', 'thead-dark');
+					tbl.appendChild(tblhead);
+					var tblbody = document.createElement('tbody');					
+					tbl.appendChild(tblbody);
+					document.getElementById("wrapper").appendChild(tbl);
+					
+
+					// first row. Category and OS
+					let headtr = tblhead.insertRow();
+					let th = document.createElement('th');
+					th.innerText = "Category";
+					th.setAttribute("rowspan", 2);
+					th.setAttribute("style", "text-align: center");
+					headtr.appendChild(th);
+
+
+					// Second row for browsers
+					let browsertr = tblhead.insertRow();
+					for(const [o, br] of Object.entries(test_case)){
+						// os
+						th = document.createElement('th');
+						th.setAttribute("colspan", br.length);
+						th.setAttribute("style", "text-align: center");
+						th.innerText = o;
+						headtr.appendChild(th);
+						// browsers
+						br.forEach( b => {
+							th_browser = document.createElement('th');
+							th_browser.innerText = b;
+							th_browser.setAttribute("style", "text-align: center");
+							browsertr.appendChild(th_browser);
+						});
+					}
+
+					categories.forEach( category => {
+						var tr = tblbody.insertRow();
+						tblbody.appendChild(tr);
+						let cat =  tr.insertCell();
+						cat.innerText = category;
+						cat.style.backgroundColor = '#212529';
+						cat.style.color = '#fff';
+						let cat_result = [category];
+						for(const [test_os, browsers] of Object.entries(test_case)){
+							browsers.forEach( browser => {
+								let result = "Not Found";
+								let anc = document.createElement('a');
+								for (let data of all_data){
+									if(
+										browser === data['browser'] &&
+										category === data['category']
+										&& data['os'] === test_os
+									){	
+										result = get_result_number(JSON.parse(data['result']));
+										anc.setAttribute("href", create_href(category, browser, data['engine'], test_os));
+										break;
+									}
+								}
+								let entry = tr.insertCell();
+								entry.setAttribute("style", "text-align: center");
+								entry.setAttribute('class', `alert alert-${result.split('; ')[1]}`);
+								anc.innerText = result.split(';')[0];
+								entry.appendChild(anc);
+							});}
+					});
+				}
+				get_structure_grid_data();
+			</script>
+	</body>
+
+</html>

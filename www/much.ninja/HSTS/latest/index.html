@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+	<head>
+	<title>HSTS Testsuite</title>
+	<meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+	</head>
+	<body>
+	<script src="https://much.ninja/static/parseHeaders.js"></script>
+	<script src="https://much.ninja/static/tableTesting.js"></script>
+	<div class="container">
+		<h3>Strict-Transport-Security</h3>
+		<div id="table"></div>
+	<a class="btn btn-primary" href="https://much.ninja/" role="button">Back</a>
+	<a class="btn btn-primary" href="#" onclick="save_result('HSTS', document.getElementsByTagName('table')[0], 'http://much.ninja/HSTS/HSTS.php'); confirm('Request sent.');return false;">Save test</a>
+	<a class="btn btn-primary" href="http://much.ninja/HSTS/HSTS.php?show=HSTS" role="button">Show saved tests</a>
+	</div>
+	<script>
+		const createEntry = (testcase) => {
+			const headers = atob(decodeURIComponent(testcase)).split('\\r\\n');
+			let content = [];
+			content.push(headers[0].replace("Strict-Transport-Security:",''));
+			content.push(headers[1] === undefined ? ' ' : headers[1].replace("Strict-Transport-Security:",''));
+			content.push("Testing..");
+			content.push("Testing..");
+			updateTableEntry(testcase, content, '', 'create');
+		}
+		const updateResult = (testcase, d, sd) => {
+			const raw_headers = atob(decodeURIComponent(testcase))
+			const headers = raw_headers.split("\\r\\n");
+			const dcontent = d === true ? "HTTPS" : 'HTTP';
+			const sdcontent = sd === true ? "HTTPS" : 'HTTP';
+			const [ specD, specSD ] = hsts_rules(headers);
+			const statusD = specD == d ? 1 : 0;
+			const statusSD = specSD == sd ? 1 : 0;
+			/*
+				If status of (sub)domain and specification for the (sub)domain (both HTTPS) are equal then mark it green:
+				E.g. HTTPS = 1, HTTP = 0, d = domain, sd = subdomain, specD = specification for domain, specSD = specification for subdomain. 
+				specD | d | specSD | sd
+				1       1     1      1
+				1       1     0      0
+				Therefore specD === d && specSD === sd
+				In warning cases, browsers enforced something that the specification wouldn't do:
+				0       1     0      1
+				0       1     0      0
+				Therefore d + sd > specD + specSD
+				In dangerous cases, the specification would enforce the HSTS header but the browser didn't:
+				1       0     1      0
+				1       1     1      0
+				Therefore specD + specSD > d + sd
+			*/
+
+			const stat = ( statusD && statusSD ) ? 'success' : (d + sd > specD + specSD) ? 'warning' : (specD + specSD > d + sd) ? 'danger' : null;
+			console.info(d,specD,statusD,sd,specSD, statusSD,stat);
+			updateTableEntry(testcase, [ '','', dcontent, sdcontent ], '', stat);
+		}
+
+		const check_hsts = async (url, test) => {
+			// Try-Catch because of SaFaRi's special CORS redirect
+			// Don't know if Safari still does that.
+			try
+			{
+				const response = await fetch(url);
+				if(response.redirected === true && response.url.startsWith("https://"))
+					return true;
+			}catch(e){
+				console.log("ERROR:", atob(decodeURIComponent(test)));
+				if(
+					e.toString().startsWith("TypeError: Cross-origin redirection to https://") &&
+					navigator.userAgent.includes('Safari') &&
+					!navigator.userAgent.includes('Chrome')
+					){
+						return true;
+					}
+			}
+			return false;
+		}
+
+		const HSTSStartTest = async (data) => {
+			const http_url = "http://" + document.location.hostname + '/HSTS/HSTS.php?pair=';
+			const http_suburl = "http://sub." + document.location.hostname + '/HSTS/HSTS.php?pair=';
+			const https_url = http_url.replace("http://", "https://");
+			const reset_hsts = https_url + "U3RyaWN0LVRyYW5zcG9ydC1TZWN1cml0eTogbWF4LWFnZT0w&setHSTS";
+			for(const test of data){
+				// Reset HSTS, test preparations
+				await fetch(reset_hsts);
+				// Create entry in result table.
+				createEntry(test[1]);
+				// Set headers
+				await fetch(https_url + test[1] + "&setHSTS");
+				/// Check header enforcement. On domain and on subdomain.
+				const result = await check_hsts(http_url + test[1], test[1]);
+				const result2 = await check_hsts(http_suburl + test[1], test[1]);
+				// Validate with spec and update table.
+				updateResult(test[1], result, result2);
+				console.info(`
+${test[0]}
+Domain: ${result === true ? "HTTPS" : "HTTP"}
+SubDomain: ${result === true ? "HTTPS" : "HTTP"}`
+				);
+			}
+			await fetch(reset_hsts);
+		}
+		// Script ist starting here.
+		if(document.location.protocol === "https:"){
+			confirm("Redirect to HTTP to perform this redirect due to 'Mixed Content'.");
+			window.location.replace("http://much.ninja/HSTS/latest/index.php");
+		}
+		createTable([ "HSTS 1", "HSTS 2", "Protocol Domain", "Protocol SubDomain" ]);
+		fetch("http://much.ninja/HSTS/HSTS_testcases.json")
+			.then(response => response.json())
+			.then(data => HSTSStartTest(data))
+	</script>
+	<script src="https://cdn.jsdelivr.net/npm/ua-parser-js@0/dist/ua-parser.min.js"></script>
+	<script src="https://much.ninja/static/save.js"></script>
+	<!-- Bootstrap -->
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+	</body>
+
+</html>

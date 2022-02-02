@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+	<head>
+	<title>ACAC Testsuite</title>
+	<meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+	</head>
+	<body>
+	<script src="https://much.ninja/static/parseHeaders.js"></script>
+	<div class="container">
+		<h3>CORS Access-Control-Allow-Credentials with Preflight</h3>
+		<small class="text-muted">Duplicated headers and directives</small>
+		<table class="table table-hover table-sm">
+			<caption>Duplicated ACAO headers and directives</caption>
+			<thead class="thead-dark">
+				<tr>
+					<th scope="col">ACAC 1</th>
+					<th scope="col">ACAC 2</th>
+					<th scope="col">Access</th>
+				</tr>
+			</thead>
+			<tbody id="results"></tbody>
+		</table>
+	<a class="btn btn-primary" href="https://much.ninja/" role="button">Back</a>
+	<a class="btn btn-primary" href="#" onclick="save_result('ACAC-Preflight', document.getElementsByTagName('table')[0], 'https://much.ninja/CORS/CORS-Preflight.php'); confirm('Request sent.');return false;">Save test</a>
+	<a class="btn btn-primary" href="https://much.ninja/CORS/CORS-Preflight.php?show=ACAC-Preflight" role="button">Show saved tests</a>
+	</div>
+
+	<div id="TestingArea"></div>
+	<script>
+		var origin = "https://sub.much.ninja";
+		var https_url = origin + '/CORS/CORS-Preflight.php?pair=';
+		var testcases = [];
+
+		var printResult = function(testcase, result, credentials_mode){
+			var raw_headers = atob(decodeURIComponent(testcase));
+			var headers = raw_headers.split("\\r\\n");
+			var tbl = document.getElementById('results');
+			var row = tbl.insertRow();
+			var first_directive = get_directive(headers[1]);
+			var second_directive = headers[2] !== undefined ? get_directive(headers[2]) : '';
+			row.insertCell().innerText = headers[1];
+			row.insertCell().innerText = headers[2] !== undefined ? headers[2] : '';
+
+			if(result)
+				row.insertCell().innerText = "Allowed";
+			else row.insertCell().innerText = "Denied";
+		
+
+			if(acao_rules(headers, credentials_mode)){
+				if(result)
+					row.className = "alert alert-success";
+				else row.className = "alert alert-warning";
+			}else{
+				if(result)
+					row.className = "alert alert-danger";
+				else row.className = "alert alert-success";
+			}
+			return atob(decodeURIComponent(testcase)).replace('\\r\\n', ' ');
+		}
+
+		var check_acac = function(testcase, index){
+			if(index > testcases.length-1)
+				return;
+			request = new XMLHttpRequest();
+			request.open('GET', https_url + testcase[1]);
+			// header for PREFLIGHT
+			request.setRequestHeader('X-PREFLIGHT', 'true');
+			// with credentials!
+			request.withCredentials = true;
+			var credentials_mode = (request.withCredentials ? 'include' : false);
+			request.onload = function(){
+				try{
+					if(request.responseText)
+						console.log(printResult(testcase[1], true, credentials_mode));
+				}catch(e){
+					console.log(printResult(testcase[1], false, credentials_mode));
+					console.warn("ERROR (onload): " + e + " " + testcase[0]);
+				}	
+				check_acac(testcases[index+1], index+1);
+			}								
+			request.onerror = function(){
+				console.log(printResult(testcase[1], false, credentials_mode));
+				console.warn("ERROR (onerror): " + testcase[0]);
+				check_acac(testcases[index+1], index+1);
+			}
+			request.send();
+		}
+
+		if(document.referrer.indexOf('sub.much.ninja') === -1){
+			document.getElementsByClassName('container')[0].innerText = "Setting cookies first";
+			setTimeout(function(){window.location = "https://sub.much.ninja/COOKIES/SetCookies/cookies.php?pair=U2V0LUNvb2tpZTogZGVmYXVsdD0xOyBQYXRoPS9cclxuU2V0LUNvb2tpZTogbm9uZT0yOyBQYXRoPS87IFNhbWVTaXRlPU5vbmU7IFNlY3VyZVxyXG5TZXQtQ29va2llOiBsYXg9MzsgUGF0aD0vOyBTYW1lU2l0ZT1MYXhcclxuU2V0LUNvb2tpZTogc3RyaWN0PTQ7IFBhdGg9LzsgU2FtZVNpdGU9U3RyaWN0&redirect="+document.location.href;}, 1000);
+		}else{
+			var request = new XMLHttpRequest();
+			request.open('GET', './TestCases/ACAC_testcases.json');
+			request.onload = function(){
+				if(request.status != 200){
+					console.warn("Error: " + request.status);
+					return; 
+				}
+				testcases = JSON.parse(request.responseText);
+				console.log("Test cases: " + testcases);
+				check_acac(testcases[0], 0);
+			}
+			request.send();
+		}
+	</script>
+	<script src="https://cdn.jsdelivr.net/npm/ua-parser-js@0/dist/ua-parser.min.js"></script>
+	<script src="https://much.ninja/static/save.js"></script>
+	<!-- Bootstrap -->
+	<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+	</body>
+
+</html>
