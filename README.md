@@ -32,7 +32,7 @@ https://github.com/FiloSottile/mkcert/issues/76#issuecomment-546054007).
 ./mkcert much.ninja sub.much.ninja
 cat much.ninja+1.pem > fullchain.pem 
 cat "$(./mkcert -CAROOT)/rootCA.pem" >> fullchain.pem
-cat ninja+1-key.pem > privkey.pem
+cat much.ninja+1-key.pem > privkey.pem
 ```
 Move `fullchain.pem` and `privkey.pem` to `~/HTTPHeaderBrowserTesting/nginx-proxy/certs`.
 Then `docker-compose up -d`.
