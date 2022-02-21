@@ -1,7 +1,7 @@
 HTTPHeaderBrowserTesting
 ==
 
-This tool is the source code of an automated service (reachable under https://much.ninja) that allows you to test your browser behavior regarding header enforcement and duplicated headers and conflicting directives.
+This is the source code of an automated service (reachable under https://much.ninja) that allows you to test your browser behavior regarding header enforcement and duplicated headers and conflicting directives.
 
 ## Local setup
 To run this you need to have `docker` (version 20.10 or higher) installed.
