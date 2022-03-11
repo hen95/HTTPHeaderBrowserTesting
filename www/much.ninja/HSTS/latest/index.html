@@ -69,9 +69,12 @@
 			}catch(e){
 				console.log("ERROR:", atob(decodeURIComponent(test)));
 				if(
-					e.toString().startsWith("TypeError: Cross-origin redirection to https://") &&
+					(e.toString().startsWith("TypeError: Cross-origin redirection to https://") &&
 					navigator.userAgent.includes('Safari') &&
-					!navigator.userAgent.includes('Chrome')
+					!navigator.userAgent.includes('Chrome')) ||
+					(e.toString().startsWith("TypeError: Load failed") &&
+					navigator.userAgent.includes('Safari') &&
+					!navigator.userAgent.includes('Chrome'))
 					){
 						return true;
 					}
