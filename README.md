@@ -5,7 +5,7 @@ This is the source code of an automated service (reachable under https://much.ni
 
 ## About
 
-All the logic is happening in the folder [www/much.ninja](www/much.ninja().
+All the logic is happening in the folder [www/much.ninja](www/much.ninja).
 The base class *Handle* in [www/much.ninja/handle.php](www/much.ninja/handle.php) contains the
 functionality to receive and process requests.
 The basic idea of the program is to reflect headers, which are requested in the URL query base64
