@@ -3,7 +3,7 @@ HTTPHeaderBrowserTesting
 
 This is the source code of an automated service (reachable under https://much.ninja) that allows you to test your browser behavior regarding header enforcement and duplicated headers and conflicting directives.
 
-## About
+## Implementation
 
 All the logic is happening in the folder [www/much.ninja](www/much.ninja).
 The base class *Handle* in [www/much.ninja/handle.php](www/much.ninja/handle.php) contains the
