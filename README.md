@@ -63,11 +63,19 @@ Important steps from the specification have been implemented in
 ## Local setup
 To run this you need to have `docker` (version 20.10 or higher) installed.
 
-1. Clone it
+1. Edit `/etc/hosts`
+To do this, you first need to modify your `/etc/hosts` accordingly.
+```
+sudo vim /etc/hosts
+
+127.0.0.1       much.ninja
+127.0.0.1       sub.much.ninja
+```
+2. Clone it
 ```
 git clone git@github.com:hen95/HTTPHeaderBrowserTesting.git
 ```
-2. Run it
+3. Run it
 
 `docker-compose up`
 
@@ -78,15 +86,7 @@ sub.much.ninja__.
 To set this up locally, you need to create a certificate for the domain `much.ninja` and
 `sub.much.ninja`.
 
-To do this, you first need to modify your `/etc/hosts` accordingly.
-```
-sudo vim /etc/hosts
-
-127.0.0.1       much.ninja
-127.0.0.1       sub.much.ninja
-```
-
-Furthermore, you can use the tool `mkcert` (see https://github.com/FiloSottile/mkcert) to create trusted certificates.
+You can use the tool `mkcert` (see https://github.com/FiloSottile/mkcert) to create trusted certificates.
 For Linux:
 ```
 sudo apt install libnss3-tools
