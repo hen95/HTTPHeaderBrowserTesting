@@ -76,7 +76,9 @@ git clone git@github.com:hen95/HTTPHeaderBrowserTesting.git
 ```
 3. Run it
 
-`docker-compose up`
+```
+docker-compose up
+```
 
 __If you want to test HSTS too, then you have to install a trusted certificate for much.ninja and
 sub.much.ninja__.
