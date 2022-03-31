@@ -1,7 +1,37 @@
 HTTPHeaderBrowserTesting
 ==
 
+## About
+
 This is the source code of an automated service (reachable under https://much.ninja) that allows you to test your browser behavior regarding header enforcement and duplicated headers and conflicting directives.
+
+Duplicated headers are multiple headers with the same name in a HTTP response:
+```
+X-Frame-Options: deny
+X-Frame-Options: sameorigin
+```
+An example for conflicting directives within a header would be:
+`X-Frame-Options: deny, sameorigin`
+
+We also test what happens, if the browser encounters invalid directives or invalid header values:
+`X-Frame-Options: random, deny`
+or
+`Strict-Transport-Security: max-age: 60, includeSubdomains` (a comma is used as separator)
+
+
+In particular, we test the following headers:
+- Duplicated X-Frame-Options (XFO) headers and conflicting directives
+- X-Frame-Options via meta tag
+- Content-Security-Policy (CSP) frame-ancestors
+- Content-Security-Policy frame-ancestors via meta tag
+- X-Frame-Options and Content-Security-Policy frame-ancestors (both set)
+- Duplicated Strict-Transport-Security (HSTS) headers and conflicting directives
+- Duplicated CORS headers and conflicting directives
+	- Access-Control-Allow-Origin
+	- Access-Control-Allow-Credentials
+	- Access-Control-Allow-Headers
+	- Access-Control-Allow-Methods
+	- Access-Control-Expose-Headers
 
 ## Methodology
 
@@ -32,6 +62,17 @@ Important steps from the specification have been implemented in
 
 ## Local setup
 To run this you need to have `docker` (version 20.10 or higher) installed.
+
+1. Clone it
+```
+git clone git@github.com:hen95/HTTPHeaderBrowserTesting.git
+```
+2. Run it
+
+`docker-compose up`
+
+__If you want to test HSTS too, then you have to install a trusted certificate for much.ninja and
+sub.much.ninja__.
 
 ### Create trusted certificate on localhost
 To set this up locally, you need to create a certificate for the domain `much.ninja` and
