@@ -64,7 +64,6 @@ Important steps from the specification have been implemented in
 To run this you need to have `docker` (version 20.10 or higher) installed.
 
 1. Edit `/etc/hosts`
-To do this, you first need to modify your `/etc/hosts` accordingly.
 ```
 sudo vim /etc/hosts
 
@@ -83,8 +82,7 @@ __If you want to test HSTS too, then you have to install a trusted certificate f
 sub.much.ninja__.
 
 ### Create trusted certificate on localhost
-To set this up locally, you need to create a certificate for the domain `much.ninja` and
-`sub.much.ninja`.
+To test HSTS, you need to create a certificate for the domain `much.ninja` and `sub.much.ninja`.
 
 You can use the tool `mkcert` (see https://github.com/FiloSottile/mkcert) to create trusted certificates.
 For Linux:
