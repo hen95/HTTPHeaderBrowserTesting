@@ -96,7 +96,7 @@ cat much.ninja+1-key.pem > privkey.pem
 Move `fullchain.pem` and `privkey.pem` to `~/HTTPHeaderBrowserTesting/nginx-proxy/certs`.
 
 
-3. Run it
+4. Run it
 ```
 cd ~/HTTPHeaderBrowserTesting && docker-compose up
 ```
