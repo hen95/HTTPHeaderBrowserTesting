@@ -74,17 +74,8 @@ sudo vim /etc/hosts
 ```
 git clone git@github.com:hen95/HTTPHeaderBrowserTesting.git
 ```
-3. Run it
 
-```
-docker-compose up
-```
-
-__If you want to test HSTS too, then you have to install a trusted certificate for much.ninja and
-sub.much.ninja__.
-
-### Create trusted certificate on localhost
-To test HSTS, you need to create a certificate for the domain `much.ninja` and `sub.much.ninja`.
+3. Create local certificates (tested on Chromium/Chrome)
 
 You can use the tool `mkcert` (see https://github.com/FiloSottile/mkcert) to create trusted certificates.
 For Linux:
@@ -103,11 +94,14 @@ cat "$(./mkcert -CAROOT)/rootCA.pem" >> fullchain.pem
 cat much.ninja+1-key.pem > privkey.pem
 ```
 Move `fullchain.pem` and `privkey.pem` to `~/HTTPHeaderBrowserTesting/nginx-proxy/certs`.
-Then `docker-compose up -d`.
 
 
+3. Run it
+```
+cd ~/HTTPHeaderBrowserTesting && docker-compose up
+```
 ## BrowserStack
-A BrowserStack account is needed to automate it.
+We automated the testing process with BrowserStack. A BrowserStack account is needed to automate it.
 The script that is used to automate the testing process is in [automateit/](automateit/).
 
 ## analyze-tranco
