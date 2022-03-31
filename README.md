@@ -26,7 +26,7 @@ In particular, we test the following headers:
 - Content-Security-Policy frame-ancestors via meta tag
 - X-Frame-Options and Content-Security-Policy frame-ancestors (both set)
 - Duplicated Strict-Transport-Security (HSTS) headers and conflicting directives
-- Duplicated CORS headers and conflicting directives
+- Duplicated CORS headers and conflicting directives (SOP subset XMLHttpRequest)
 	- Access-Control-Allow-Origin
 	- Access-Control-Allow-Credentials
 	- Access-Control-Allow-Headers
