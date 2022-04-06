@@ -88,6 +88,7 @@ go build -ldflags "-X main.Version=$(git describe --tags)"
 Use the following approach to get `fullchain.pem` and `privkey.pem` (see
 https://github.com/FiloSottile/mkcert/issues/76#issuecomment-546054007).
 ```
+./mkcert -install
 ./mkcert much.ninja sub.much.ninja
 cat much.ninja+1.pem > fullchain.pem 
 cat "$(./mkcert -CAROOT)/rootCA.pem" >> fullchain.pem
